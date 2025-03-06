@@ -137,6 +137,6 @@ dmypy.json
 .idea
 
 # SV files
-*-OST-*/*
+resources/*-OST-*/*
 .ipynb_checkpoints/*
 __pycache__/

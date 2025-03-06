@@ -66,23 +66,24 @@ $graph:
             set -x  # Debug mode
 
             echo "OpenSarToolkit START"
-            python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
 
-            res=$?
+            # python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
 
-            # Delete unnecessary files
-            echo "Deleting unnecessary files"
-            find ./ -mindepth 1 -maxdepth 1 -type d ! -name "result-item" ! -name "." -exec rm -rf {} +
-            rm -f processing.json .install4j run_me.sh
+            # res=$?
 
-            # Move tif into "result-item" sub-dir
-            mv *.tif result-item/
+            # # Delete unnecessary files
+            # echo "Deleting unnecessary files"
+            # find ./ -mindepth 1 -maxdepth 1 -type d ! -name "result-item" ! -name "." -exec rm -rf {} +
+            # rm -f processing.json .install4j run_me.sh
 
-            # Define STAC file 
-            STAC_FILE="result-item/result-item.json"
+            # # Move tif into "result-item" sub-dir
+            # mv *.tif result-item/
+
+            # # Define STAC file 
+            # STAC_FILE="result-item/result-item.json"
             
-            # Replace string of TIFF asset's href 
-            sed -i 's#\.\./\([0-9]\+\)\.tif#./\1.tif#g' $STAC_FILE
+            # # Replace string of TIFF asset's href 
+            # sed -i 's#\.\./\([0-9]\+\)\.tif#./\1.tif#g' $STAC_FILE
             
             echo "END of OpenSarToolkit"
             exit $res
