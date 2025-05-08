@@ -1,24 +1,14 @@
 cwlVersion: v1.2
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 1.0.8
+s:softwareVersion: 1.0.9
 schemas:
 - http://schema.org/version/9.0/schemaorg-current-http.rdf
 
 $graph:
 - class: CommandLineTool
   id: ost_script_1
-  requirements:
-    DockerRequirement:
-      dockerPull: quay.io/bcdev/opensartoolkit:version5
-    NetworkAccess:
-      networkAccess: true
-    ResourceRequirement:
-      coresMax: 4
-      ramMax: 16000
-  baseCommand:
-    - python3
-    - /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py
+  baseCommand: ["/bin/bash", "run_me.sh"]
   arguments:
     - --wipe-cwd
   inputs:
@@ -61,15 +51,47 @@ $graph:
       inputBinding:
         prefix: --cdse-password
     dry-run:
-      type: boolean
+      type: boolean?
       inputBinding:
         prefix: --dry-run
-
   outputs:
     ost_ard:
       outputBinding:
         glob: .
       type: Directory
+
+  requirements:
+    DockerRequirement:
+      dockerPull: quay.io/bcdev/opensartoolkit:version5
+    NetworkAccess:
+      networkAccess: true
+    ResourceRequirement:
+      coresMax: 4
+      ramMax: 16000
+    InlineJavascriptRequirement: {}
+    InitialWorkDirRequirement:
+      listing:
+        - entryname: run_me.sh
+          entry: |-
+            #!/bin/bash
+            set -e  # Stop on error
+            set -x  # Debug mode
+
+            echo "OpenSarToolkit START"
+
+            echo "Inputs and Arguments"
+            echo python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
+
+            # python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
+
+            res=$?         
+
+            # Print dir content
+            echo $PWD
+            ls -latr *
+            
+            echo "END of OpenSarToolkit"
+            exit $res
 
 
 - class: Workflow
@@ -110,13 +132,9 @@ $graph:
         - BILINEAR_INTERPOLATION
         - BICUBIC_INTERPOLATION
         type: enum
-    dry-run:
-      type: boolean
-      label: Dry run
-      doc: Skip processing and write a placeholder output file instead
 
   outputs:
-    ost_ard:
+    output:
       outputSource: 
         - run_script/ost_ard
       type: Directory
@@ -130,6 +148,5 @@ $graph:
         ard-type: ard-type
         with-speckle-filter: with-speckle-filter
         resampling-method: resampling-method
-        dry-run: dry-run
       out:
         - ost_ard

@@ -5,4 +5,4 @@ resolution: 100
 ard-type: 'OST_GTC'
 with-speckle-filter: true
 resampling-method: 'BICUBIC_INTERPOLATION' #'BILINEAR_INTERPOLATION'
-# dry-run: True
+dry-run: True
