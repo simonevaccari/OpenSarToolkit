@@ -82,7 +82,7 @@ $graph:
             echo "Inputs and Arguments"
             echo python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
 
-            # python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
+            python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
 
             res=$?         
 
