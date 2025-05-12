@@ -68,6 +68,9 @@ $graph:
     ResourceRequirement:
       coresMax: 4
       ramMax: 16000
+    EnvVarRequirement:
+      envDef:
+        INPUT_DIR: $(inputs.input.path)
     InlineJavascriptRequirement: {}
     InitialWorkDirRequirement:
       listing:
@@ -76,13 +79,22 @@ $graph:
             #!/bin/bash
             set -e  # Stop on error
             set -x  # Debug mode
-
+            
             echo "OpenSarToolkit START"
-
-            echo "Inputs and Arguments"
+            ls -latr *
+            
+            #!/bin/bash
+            echo "Input directory path: $INPUT_DIR"
+            
             echo python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
-
-            python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
+            
+            if [ \$((\$(find $INPUT_DIR -name "manifest.safe" | wc -l))) -eq 0 ]
+            then
+              echo "Error: manifest.safe file not found, check staged-in data. Stopping execution"
+              exit 1
+            fi
+          
+            # python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
 
             res=$?         
 
