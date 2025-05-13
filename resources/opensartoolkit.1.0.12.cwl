@@ -1,7 +1,7 @@
 cwlVersion: v1.2
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 1.0.10
+s:softwareVersion: 1.0.12
 schemas:
 - http://schema.org/version/9.0/schemaorg-current-http.rdf
 
@@ -83,18 +83,21 @@ $graph:
             echo "OpenSarToolkit START"
             ls -latr *
             
-            #!/bin/bash
             echo "Input directory path: $INPUT_DIR"
             
             echo python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
             
+            # Check that manifest.safe file exists, and print full path 
             if [ \$((\$(find $INPUT_DIR -name "manifest.safe" | wc -l))) -eq 0 ]
             then
               echo "Error: manifest.safe file not found, check staged-in data. Stopping execution"
               exit 1
             fi
-          
-            # python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
+
+            found_path=\$(find "$INPUT_DIR" -name "manifest.safe" | head -n 1)
+            echo "$found_path"
+
+            python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
 
             res=$?         
 
