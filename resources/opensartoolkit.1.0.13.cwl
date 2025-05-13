@@ -1,7 +1,7 @@
 cwlVersion: v1.2
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 1.0.12
+s:softwareVersion: 1.0.13
 schemas:
 - http://schema.org/version/9.0/schemaorg-current-http.rdf
 
@@ -85,8 +85,6 @@ $graph:
             
             echo "Input directory path: $INPUT_DIR"
             
-            echo python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
-            
             # Check that manifest.safe file exists, and print full path 
             if [ \$((\$(find $INPUT_DIR -name "manifest.safe" | wc -l))) -eq 0 ]
             then
@@ -97,7 +95,27 @@ $graph:
             found_path=\$(find "$INPUT_DIR" -name "manifest.safe" | head -n 1)
             echo "$found_path"
 
-            python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
+            # Extract Sentinel-1 ID  
+            s1_id=\$(basename "\$(dirname "$found_path")")
+            s1_id="\${s1_id%.SAFE}"
+            echo "$s1_id"
+
+            # check if Sentinel-1 ID appears twice in found_path (ie execution on GEP)
+            count=\$(grep -o "$s1_id" <<< "$found_path" | wc -l)
+            echo "$count"
+
+            # if data has been staged-in in GEP: then append S1 ID to the input path 
+            if [[ "$count" -eq 2 ]]; then
+              echo "properly staged-in (from GEP)"
+              echo python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"/"$s1_id"
+              python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"/"$s1_id"
+
+            else
+              # else do nothing (ie launch the python command as it is)
+              echo "inproper staged-in (manual?)"
+              echo python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
+              python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
+            fi 
 
             res=$?         
 
@@ -106,6 +124,7 @@ $graph:
             ls -latr *
             
             echo "END of OpenSarToolkit"
+            set +x
             exit $res
 
 
