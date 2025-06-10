@@ -1,7 +1,7 @@
 cwlVersion: v1.2
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 1.0.19
+s:softwareVersion: 1.0.22
 schemas:
 - http://schema.org/version/9.0/schemaorg-current-http.rdf
 
@@ -33,12 +33,12 @@ $graph:
     with-speckle-filter:
       type:
       - symbols: 
-        - YES
-        - NO
+        - APPLY-FILTER
+        - NO-FILTER
         type: enum
       inputBinding:
         valueFrom: |
-          $(self == "YES" ? "--with-speckle-filter" : null)
+          $(self == "APPLY-FILTER" ? "--with-speckle-filter" : null)
     resampling-method:
       type:
       - symbols:
@@ -109,7 +109,7 @@ $graph:
             echo "$found_path"
 
             echo python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
-            # python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
+            python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
             
             res=$?         
 
@@ -118,12 +118,6 @@ $graph:
             echo $PWD
             ls -latr *            
                     
-            # Validate STAC Item
-            python3 -m venv stac_env
-            source stac_env/bin/activate
-            pip install stac-validator
-            stac-validate result-item/result-item.json
-
             echo "END of OpenSarToolkit"
             set +x
             exit $res
@@ -160,8 +154,8 @@ $graph:
       doc: Whether to apply a speckle filter
       type:
       - symbols:
-        - YES
-        - NO
+        - APPLY-FILTER
+        - NO-FILTER
         type: enum
     resampling-method:
       label: Resampling method

@@ -3,6 +3,6 @@ input:
   path: /workspace/S1data/datafromCDS
 resolution: 100
 ard-type: 'OST_GTC'
-with-speckle-filter: "yes"
+with-speckle-filter: "NO-FILTER"
 resampling-method: 'BICUBIC_INTERPOLATION' #'BILINEAR_INTERPOLATION'
 # dry-run: True
