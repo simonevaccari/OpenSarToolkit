@@ -1,7 +1,7 @@
 cwlVersion: v1.2
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 1.0.17
+s:softwareVersion: 1.0.19
 schemas:
 - http://schema.org/version/9.0/schemaorg-current-http.rdf
 
@@ -33,11 +33,12 @@ $graph:
     with-speckle-filter:
       type:
       - symbols: 
-        - true
-        - false
+        - yes
+        - no
         type: enum
       inputBinding:
-        prefix: --with-speckle-filter
+        valueFrom: |
+          $(self == "yes" ? "--with-speckle-filter" : null)
     resampling-method:
       type:
       - symbols:
@@ -115,8 +116,14 @@ $graph:
             # Print dir content
             echo "Print PWD path and content: $PWD"
             echo $PWD
-            ls -latr *
-            
+            ls -latr *            
+                    
+            # Validate STAC Item
+            python3 -m venv stac_env
+            source stac_env/bin/activate
+            pip install stac-validator
+            stac-validate result-item/result-item.json
+
             echo "END of OpenSarToolkit"
             set +x
             exit $res
@@ -153,8 +160,8 @@ $graph:
       doc: Whether to apply a speckle filter
       type:
       - symbols:
-        - true
-        - false
+        - yes
+        - no
         type: enum
     resampling-method:
       label: Resampling method

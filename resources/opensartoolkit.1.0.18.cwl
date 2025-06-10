@@ -1,7 +1,7 @@
 cwlVersion: v1.2
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 1.0.17
+s:softwareVersion: 1.0.18
 schemas:
 - http://schema.org/version/9.0/schemaorg-current-http.rdf
 
@@ -31,13 +31,12 @@ $graph:
       inputBinding:
         prefix: --ard-type
     with-speckle-filter:
-      type:
-      - symbols: 
-        - true
-        - false
-        type: enum
+      type: boolean
+      default: false
       inputBinding:
         prefix: --with-speckle-filter
+        valueFrom: "$(self ? '' : null)"
+        separate: false
     resampling-method:
       type:
       - symbols:
@@ -108,7 +107,7 @@ $graph:
             echo "$found_path"
 
             echo python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
-            # python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
+            python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
             
             res=$?         
 
@@ -151,11 +150,7 @@ $graph:
     with-speckle-filter:
       label: Speckle filter
       doc: Whether to apply a speckle filter
-      type:
-      - symbols:
-        - true
-        - false
-        type: enum
+      type: boolean
     resampling-method:
       label: Resampling method
       doc: Resampling method to use
