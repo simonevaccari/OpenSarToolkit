@@ -1,0 +1,20 @@
+name: env_eo
+channels:
+  - conda-forge
+  - defaults
+  - terradue
+dependencies:
+  - pystac>=1.4.0
+  - pystac-client
+  - python>=3.6
+  - numpy
+  - ipykernel
+  - geopandas
+  - matplotlib
+  - requests
+  - pip
+  - pip:
+    - rasterio
+    - folium
+    - loguru
+    - pystac[validation] 
