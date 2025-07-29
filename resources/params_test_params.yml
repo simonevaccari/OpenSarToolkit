@@ -1,6 +1,6 @@
 input:
   class: Directory
-  path: /workspace/S1data/datafromCDS
+  path: /workspace/APEx/S1data/datafromCDS
 resolution: 100
 ard-type: 'OST_GTC'
 with-speckle-filter: "NO-FILTER"
