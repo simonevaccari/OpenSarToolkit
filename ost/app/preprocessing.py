@@ -239,6 +239,11 @@ def get_input_path_from_stac(stac_root: str) -> str:
             safe_dir = stac_path / filename.parent
             LOGGER.info(f"Found SAFE directory at {safe_dir}")
             return str(safe_dir)
+        elif manifest_asset.href:
+            filename = pathlib.Path(manifest_asset.href)
+            safe_dir = stac_path / filename.parent
+            LOGGER.info(f"Found SAFE directory at {safe_dir}")
+            return str(safe_dir)
         else:
             raise RuntimeError(f"No filename for manifest asset in {catalog}")
     else:
