@@ -231,9 +231,9 @@ def get_input_path_from_stac(stac_root: str) -> str:
     assert len(item_links) == 1
     item_link = item_links[0]
     item = pystac.Item.from_file(str(stac_path / item_link.href))
-    if "manifest" in item.assets:
+    if "safe-manifest" in item.assets:
         LOGGER.info(f"Found manifest asset in {catalog}")
-        manifest_asset = item.assets["manifest"]
+        manifest_asset = item.assets["safe-manifest"]
         if "filename" in manifest_asset.extra_fields:
             filename = pathlib.Path(manifest_asset.extra_fields["filename"])
             safe_dir = stac_path / filename.parent

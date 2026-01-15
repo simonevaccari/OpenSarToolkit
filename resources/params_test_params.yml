@@ -1,6 +1,6 @@
 input:
   class: Directory
-  path: /workspace/APEx/S1data/datafromCDS
+  path: /workspace/data/stagein/S1A_IW_GRDH_1SDV_20241113T170607_20241113T170632_056539_06EEA8_B145
 resolution: 100
 ard-type: 'OST_GTC'
 with-speckle-filter: "NO-FILTER"
