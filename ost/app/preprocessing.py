@@ -241,7 +241,7 @@ def get_input_path_from_stac(stac_root: str) -> str:
             return str(safe_dir)
         elif manifest_asset.href:
             filename = pathlib.Path(manifest_asset.href)
-            safe_dir = stac_path / filename.parent
+            safe_dir = stac_path / item.id / filename.parent
             LOGGER.info(f"Found SAFE directory at {safe_dir}")
             return str(safe_dir)
         else:
