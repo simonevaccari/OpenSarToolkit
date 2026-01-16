@@ -1,8 +1,0 @@
-input:
-  class: Directory
-  path: /workspace/S1data/datafromCDS
-resolution: 100
-ard-type: 'OST_GTC'
-with-speckle-filter: False
-resampling-method: 'BICUBIC_INTERPOLATION' #'BILINEAR_INTERPOLATION'
-dry-run: False
