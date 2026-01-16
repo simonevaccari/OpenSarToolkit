@@ -1,0 +1,27 @@
+# input:
+#   class: Directory
+#   path: /workspace/data/stagein/S1A_IW_GRDH_1SDV_20241113T170607_20241113T170632_056539_06EEA8_B145
+resolution: 100
+ard-type: 'OST_GTC'
+with-speckle-filter: "NO-FILTER"
+resampling-method: 'BILINEAR_INTERPOLATION' # 'BICUBIC_INTERPOLATION'
+
+search_request:
+  bbox:
+    - -121.399
+    - 39.834
+    - -120.74
+    - 40.472
+  collections:
+    - sentinel-2-l2a
+  datetime_interval:
+    end:
+      value: '2021-06-15T23:59:59'
+    start:
+      value: '2021-06-01T00:00:00'
+  limit: 20
+  max-items: 2
+stac_api_endpoint:
+  headers: []
+  url:
+    value: https://earth-search.aws.element84.com/v1/
