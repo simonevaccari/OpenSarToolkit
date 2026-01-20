@@ -140,3 +140,4 @@ dmypy.json
 resources/*-OST-*/*
 .ipynb_checkpoints/*
 __pycache__/
+resources/v2/params*
