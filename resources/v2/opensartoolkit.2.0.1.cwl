@@ -323,7 +323,7 @@ $graph:
 
     requirements:
       DockerRequirement:
-        dockerPull: ghcr.io/simonevaccari/opensartoolkit:0.4
+        dockerPull: ghcr.io/simonevaccari/opensartoolkit:1.0
       NetworkAccess:
         networkAccess: true
       ResourceRequirement:
