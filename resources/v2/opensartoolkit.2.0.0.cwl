@@ -33,10 +33,6 @@ $graph:
         type: |-
           https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml#STACSearchSettings
 
-      # input:
-      #   type: Directory
-      #   label: Input S1 GRD
-      #   loadListing: no_listing
       resolution:
         type: int
         label: Resolution
