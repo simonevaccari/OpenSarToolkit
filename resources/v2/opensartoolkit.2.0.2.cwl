@@ -181,8 +181,8 @@ $graph:
         doc: Staged products paths
         type: Directory
         outputBinding:
-          # glob: $(inputs.reference.split("/").pop().replace(".SAFE","").replace("\"",""))
-          glob: "S1A_IW_GRDH_1SDV_20241113T170607_20241113T170632_056539_06EEA8_B145"
+          glob: $(inputs.reference.split("/").pop().replace(".SAFE","").replace("\"",""))
+          # glob: "S1A_IW_GRDH_1SDV_20241113T170607_20241113T170632_056539_06EEA8_B145" # hard-coded native file
     requirements:
       NetworkAccess:
         networkAccess: true
@@ -202,8 +202,8 @@ $graph:
               
               # Extract ref and uid
               ref="${return inputs.reference;}"
-              # uid="\${ref##*/}" hard-coding uid to the correct data (non-COG)
-              uid="S1A_IW_GRDH_1SDV_20241113T170607_20241113T170632_056539_06EEA8_B145"
+              uid="\${ref##*/}" 
+              # uid="S1A_IW_GRDH_1SDV_20241113T170607_20241113T170632_056539_06EEA8_B145" #hard-coded native file
               echo $ref
               echo $uid
 
