@@ -1,0 +1,28 @@
+resolution: 100
+ard-type: 'OST_GTC'
+with-speckle-filter: "NO-FILTER"
+resampling-method: 'BILINEAR_INTERPOLATION' # 'BICUBIC_INTERPOLATION'
+
+start_date: '2024-11-13T00:00:00Z'
+end_date: '2024-11-15T23:59:59Z'
+aoi:
+  type: Polygon
+  bbox: [12.146, 41.701, 12.629, 41.967]
+  coordinates:
+    -   
+      - [12.146, 41.701]
+      - [12.629, 41.701]
+      - [12.629, 41.967]
+      - [12.146, 41.967]
+      - [12.146, 41.701]
+orbit_direction: "ASCENDING"
+track_number: 117
+
+CDSE_ENDPOINT: https://catalogue.dataspace.copernicus.eu/odata/v1/Products
+CDSE_COLLECTION: SENTINEL-1
+
+stac_api_endpoint:
+  headers: []
+  url:
+    # value: https://earth-search.aws.element84.com/v1/
+    value: https://stac.dataspace.copernicus.eu/v1/
