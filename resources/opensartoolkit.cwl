@@ -6,8 +6,8 @@ schemas:
 - http://schema.org/version/9.0/schemaorg-current-http.rdf
 
 $graph:
-  - class: Workflow
-    label: OpenSarToolkit
+  - label: OpenSarToolkit
+    class: Workflow
     doc: Preprocessing an S1 image with OST
     id: opensartoolkit
     requirements: 
@@ -90,9 +90,9 @@ $graph:
       stage_in:
         label: Stage-in S1 data 
         doc: Stage-in S1 data with Arvesto
-        scatter: reference
+        scatter: reference_ID
         in:
-          reference: convert_search/items
+          reference_ID: convert_search/items
         run: "#stage-in"
         out: [staged]
       run_script:
@@ -108,8 +108,8 @@ $graph:
         
 # =====================================
 
-  - class: CommandLineTool
-    id: convert-search
+  - id: convert-search
+    class: CommandLineTool
     label: Gets the item self hrefs
     doc: Gets the item self hrefs from a STAC search result
     baseCommand: ["/bin/sh", "run.sh"]
@@ -134,8 +134,9 @@ $graph:
           set -x
           set -euo pipefail
 
-          yq '[.features[].links[] | select(.rel=="self") | .href]' "$(inputs.search_results.path)" > items.json
-          echo "Items href extracted"
+          yq '[.features[].links[] | select(.rel=="derived_from") | .href | capture("Name%20eq%20%27(?<name>[^%]+)\\.SAFE%27") | .name]' "$(inputs.search_results.path)" > items.json
+
+          echo "Items IDs extracted"
           cat items.json
     inputs:
       search_request:
@@ -158,16 +159,16 @@ $graph:
 
 # =====================================
 
-  - class: CommandLineTool
+  - id: stage-in
+    class: CommandLineTool
     label: harvest products from CDSE
-    id: stage-in
     baseCommand:
       - /bin/bash
       - arvesto.sh
     inputs:
-      reference:
-        label: Product reference
-        doc: Product reference
+      reference_ID:
+        label: Product reference ID
+        doc: Product reference ID
         type: string
     outputs:
       staged:
@@ -175,8 +176,8 @@ $graph:
         doc: Staged products paths
         type: Directory
         outputBinding:
-          glob: $(inputs.reference.split("/").pop().replace(".SAFE","").replace("\"",""))
-          # glob: "S1A_IW_GRDH_1SDV_20241113T170607_20241113T170632_056539_06EEA8_B145" # hard-coded native file
+          glob: $(inputs.reference_ID)
+          # glob: $(inputs.reference.split("/").pop().replace(".SAFE","").replace("\"",""))
     requirements:
       NetworkAccess:
         networkAccess: true
@@ -188,52 +189,48 @@ $graph:
       InlineJavascriptRequirement: {}
       InitialWorkDirRequirement:
         listing:
-          - entryname: arvesto.sh
-            entry: |-
-              #!/bin/bash
-              set -euo pipefail
-              set -ex
-              
-              # Extract ref and uid
-              ref="${return inputs.reference;}"
-              uid="\${ref##*/}" 
-              # uid="S1A_IW_GRDH_1SDV_20241113T170607_20241113T170632_056539_06EEA8_B145" #hard-coded native file
-              echo $ref
-              echo $uid
+        - entryname: arvesto.sh
+          entry: |-
+            #!/bin/bash
+            set -euo pipefail
+            set -ex
+            
+            # Extract ref and uid
+            uid="${return inputs.reference_ID;}"
+            echo $uid
 
-              # CDSE creds
-              export CDSE_ACCESS_KEY_ID=$CDSE_AWS_ACCESS_KEY_ID
-              export CDSE_SECRET_ACCESS_KEY=$CDSE_AWS_SECRET_ACCESS_KEY
-              export CDSE_SERVICE_URL=$CDSE_ENDPOINT_URL
-              
-              # Stagein with arvesto
-              # arvesto download --product $uid.SAFE --output $uid --dump-stac-catalog 
-              
-              # Check if the directory was created
-              if [[ -d $uid/$uid/$uid.SAFE ]]; then
-                echo "Directory $uid.SAFE created."
-                # find $uid/$uid/$uid.SAFE -maxdepth 2 -type f
-              else
-                echo "Directory $uid.SAFE was not created"
-              fi
-              
-              # Check STAC item and print
-              stac_json="$uid/$uid/$uid.json"
-              if [[ -f "$stac_json" ]]; then
-                echo "Found STAC item: $stac_json"
-              else
-                echo "Missing STAC item: $stac_json"
-                exit 1
-              fi
-              
-              rm arvesto.sh
-              exit 0
-
+            # CDSE creds
+            export CDSE_ACCESS_KEY_ID=$CDSE_AWS_ACCESS_KEY_ID
+            export CDSE_SECRET_ACCESS_KEY=$CDSE_AWS_SECRET_ACCESS_KEY
+            export CDSE_SERVICE_URL=$CDSE_ENDPOINT_URL
+            
+            # Stagein with arvesto
+            arvesto download --product $uid.SAFE --output $uid --dump-stac-catalog 
+            
+            # Check if the directory was created
+            if [[ -d $uid/$uid/$uid.SAFE ]]; then
+              echo "Directory $uid.SAFE created."
+              # find $uid/$uid/$uid.SAFE -maxdepth 2 -type f
+            else
+              echo "Directory $uid.SAFE was not created"
+            fi
+            
+            # Check STAC item and print
+            stac_json="$uid/$uid/$uid.json"
+            if [[ -f "$stac_json" ]]; then
+              echo "Found STAC item: $stac_json"
+            else
+              echo "Missing STAC item: $stac_json"
+              exit 1
+            fi
+            
+            rm arvesto.sh
+            exit 0
 
 # =====================================
 
-  - class: CommandLineTool
-    id: ost_run
+  - id: ost_run
+    class: CommandLineTool
     baseCommand: ["/bin/bash", "run_me.sh"]
     arguments:
       - --wipe-cwd
@@ -302,40 +299,40 @@ $graph:
       InlineJavascriptRequirement: {}
       InitialWorkDirRequirement:
         listing:
-          - entryname: run_me.sh
-            entry: |-
-              #!/bin/bash
-              set -e  # Stop on error
-              set -x  # Debug mode
-              
-              echo "OpenSarToolkit START"
-              find .
-              
-              echo "--------------------------------"
-              echo "Input directory path: $INPUT_DIR"
-              find $INPUT_DIR
-              echo "--------------------------------"
-              
-              # Check that manifest.safe file exists, and print full path 
-              if [ \$((\$(find $INPUT_DIR -name "manifest.safe" | wc -l))) -eq 0 ]
-              then
-                echo "Error: manifest.safe file not found, check staged-in data. Stopping execution"
-                exit 1
-              fi
+        - entryname: run_me.sh
+          entry: |-
+            #!/bin/bash
+            set -e  # Stop on error
+            set -x  # Debug mode
+            
+            echo "OpenSarToolkit START"
+            find .
+            
+            echo "--------------------------------"
+            echo "Input directory path: $INPUT_DIR"
+            find $INPUT_DIR
+            echo "--------------------------------"
+            
+            # Check that manifest.safe file exists, and print full path 
+            if [ \$((\$(find $INPUT_DIR -name "manifest.safe" | wc -l))) -eq 0 ]
+            then
+              echo "Error: manifest.safe file not found, check staged-in data. Stopping execution"
+              exit 1
+            fi
 
-              found_path=\$(find "$INPUT_DIR" -name "manifest.safe" | head -n 1)
-              echo "$found_path"
+            found_path=\$(find "$INPUT_DIR" -name "manifest.safe" | head -n 1)
+            echo "$found_path"
 
-              echo python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
-              python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
-              
-              res=$?         
+            echo python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
+            python3 /usr/local/lib/python3.8/dist-packages/ost/app/preprocessing.py "$@"
+            
+            res=$?         
 
-              # Print dir content
-              echo "Print PWD path and content: $PWD"
-              echo $PWD
-              ls -latr *            
-                      
-              echo "END of OpenSarToolkit"
-              set +x
-              exit $res
+            # Print dir content
+            echo "Print PWD path and content: $PWD"
+            echo $PWD
+            ls -latr *            
+                    
+            echo "END of OpenSarToolkit"
+            set +x
+            exit $res
