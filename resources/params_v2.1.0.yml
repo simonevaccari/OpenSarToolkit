@@ -1,0 +1,73 @@
+resolution: 100
+ard-type: 'OST_GTC'
+with-speckle-filter: "NO-FILTER"
+resampling-method: 'BILINEAR_INTERPOLATION' # 'BICUBIC_INTERPOLATION'
+
+# search_request:
+#   collections:
+#     - SENTINEL-1
+#   bbox:
+#     - 12.146
+#     - 41.701
+#     - 12.629
+#     - 41.967
+#   datetime_interval:
+#     end:
+#       value: "2024-11-15T23:59:59"
+#     start:
+#       value: "2024-11-13T00:00:00"
+  # orbit_direction: "ASCENDING"
+  # track_number: 117
+
+# odata_api_endpoint:
+#   headers: []
+#   url:
+#     value: https://catalogue.dataspace.copernicus.eu/odata/v1/Products # odata_api_endpoint
+#     # value: https://stac.dataspace.copernicus.eu/v1/ # stac_api_endpoint
+
+search_request:
+  collections:
+    - SENTINEL-1
+  datetime_interval:
+    start:
+      value: "2025-10-01T18:00:00"
+    end:
+      value: "2025-10-15T18:59:59"
+  bbox:
+    - -12.655118166047592 
+    - 40.35854475076158 
+    - -28.334291357162826 
+    - 48.347694733853245
+  filter-lang: cql2-json
+  filter:
+    {
+      "op": "and",
+      "args":
+        [
+          {
+            "op": "in",
+            "args":
+              [
+                { "property": "productType" },
+                [
+                  "IW_GRHD_1S",
+                  "IW_GRDH_1S",
+                  "EW_GRDM_1S",
+                  "EW_GRDH_1S",
+                  "S1_GRDH_1S",
+                  "S2_GRDH_1S",
+                  "S3_GRDH_1S",
+                  "S4_GRDH_1S",
+                  "S5_GRDH_1S",
+                  "S6_GRDH_1S",
+                ],
+              ],
+          },
+        ],
+    }
+
+api_endpoint:
+  headers: []
+  url:
+    value: https://catalogue.dataspace.copernicus.eu/odata/v1/Products # odata_api_endpoint
+    # value: https://stac.dataspace.copernicus.eu/v1/ # stac_api_endpoint
