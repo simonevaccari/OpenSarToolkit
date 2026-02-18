@@ -1,7 +1,7 @@
 cwlVersion: v1.2
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 2.1.0
+s:softwareVersion: 2.1.1
 schemas:
 - http://schema.org/version/9.0/schemaorg-current-http.rdf
 
@@ -70,6 +70,14 @@ $graph:
           type: array
           items: Directory
     steps:
+      # make_daterange:
+      #   label: Convert Search
+      #   doc: Convert Search results to get the item self hrefs  
+      #   in:
+      #     search_request: search_request
+      #   run: "#make_daterange"
+      #   out: 
+      #     - search_request_daterange
       discovery:
         label: OData API discovery
         doc: Discover STAC items from a OData API endpoint based on a search request
@@ -336,3 +344,5 @@ $graph:
             echo "END of OpenSarToolkit"
             set +x
             exit $res
+
+

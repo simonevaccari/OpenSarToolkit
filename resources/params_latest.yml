@@ -3,7 +3,8 @@ ard-type: 'OST_GTC'
 with-speckle-filter: "NO-FILTER"
 resampling-method: 'BILINEAR_INTERPOLATION' # 'BICUBIC_INTERPOLATION'
 
-odata_api_endpoint:
+# odata_api_endpoint:
+api_endpoint:
   headers: []
   url:
     value: https://catalogue.dataspace.copernicus.eu/odata/v1/Products # odata_api_endpoint
@@ -17,6 +18,10 @@ search_request:
     - 41.701
     - 12.629
     - 41.967
+    # - 12.546
+    # - 42.188
+    # - 12.777
+    # - 42.35
   datetime_interval:
     end:
       value: "2024-11-15T23:59:59"
@@ -28,8 +33,10 @@ search_request:
       "op": "and",
       "args":
         [
-          {"op": "eq", "args": [{"property": "relativeOrbitNumber"}, 117]},
-          {"op": "eq", "args": [{"property": "orbitDirection"}, "ASCENDING"]},
+          # {"op": "eq", "args": [{"property": "relativeOrbitNumber"}, 117]},
+          # {"op": "eq", "args": [{"property": "orbitDirection"}, "ASCENDING"]},
+          # {"op": "eq", "args": [{"property": "platformShortName"}, "SENTINEL-1"]},
+          # {"op": "eq", "args": [{"property": "platformSerialIdentifier"}, "A"]},
           {
             "op": "in",
             "args":
@@ -37,9 +44,14 @@ search_request:
                 { "property": "productType" },
                 [
                   "IW_GRHD_1S",
-                  "IW_GRDH_1S"
+                  "IW_GRDH_1S",
+                  "IW_GRHD_1S-COG",
+                  "IW_GRDH_1S-COG"
                 ]
               ]
           }
         ]
     }
+input:
+  class: Directory
+  path: /workspace/data/stagein/S1A_IW_GRDH_1SDV_20241113T170607_20241113T170632_056539_06EEA8_B145

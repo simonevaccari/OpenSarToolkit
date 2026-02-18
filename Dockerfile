@@ -3,6 +3,8 @@ FROM ubuntu:20.04
 LABEL maintainer="Andreas Vollrath, FAO"
 LABEL OpenSARToolkit='0.12.3'
 
+ENV HOME=/home/ost
+
 # set work directory to home and download snap
 WORKDIR /home/ost
 
@@ -19,7 +21,7 @@ ENV TBX="esa-snap_sentinel_unix_${TBX_VERSION}_${TBX_SUBVERSION}.sh" \
     HOME=/home/ost \
     PATH=$PATH:/home/ost/programs/snap/bin:/home/ost/programs/OTB-${OTB_VERSION}-Linux64/bin
 
-RUN apt-get update && apt-get install -yq wget libquadmath0
+RUN apt-get update && apt-get install -yq wget libquadmath0 sudo
 
 RUN wget http://archive.ubuntu.com/ubuntu/pool/universe/g/gcc-6/gcc-6-base_6.4.0-17ubuntu1_amd64.deb && \
   dpkg -i gcc-6-base_6.4.0-17ubuntu1_amd64.deb && \
@@ -42,6 +44,10 @@ RUN groupadd -r ost && \
         nodejs \
         npm
 
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -yq jq
+
+# Install OTB. Use some custom headers when fetching package, since otherwise
+# the download speed is heavily throttled.
 RUN alias python=python3 && \
     rm -rf /var/lib/apt/lists/*  && \
     python3 -m pip install jupyterlab && \
@@ -52,7 +58,10 @@ RUN alias python=python3 && \
     rm $TBX && \
     rm snap.varfile && \
     cd /home/ost/programs && \
-    wget https://www.orfeo-toolbox.org/packages/archives/OTB/${OTB} && \ 
+    wget https://www.orfeo-toolbox.org/packages/archives/OTB/${OTB} \
+      --progress=dot:giga \
+      --referer="https://www.orfeo-toolbox.org/packages/archives/OTB/" \
+      --user-agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:132.0) Gecko/20100101 Firefox/132.0" && \
     chmod +x $OTB && \
     ./${OTB} && \
     rm -f OTB-${OTB_VERSION}-Linux64.run 
@@ -66,15 +75,19 @@ RUN /home/ost/programs/snap/bin/snap --nosplash --nogui --modules --update-all 2
 # set usable memory to 12G
 RUN echo "-Xmx12G" > /home/ost/programs/snap/bin/gpt.vmoptions
 
-COPY requirements.txt $HOME
+COPY constraints.txt $HOME
 
-# get OST and tutorials
-RUN python3 -m pip install git+https://github.com/ESA-PhiLab/OpenSarToolkit.git -c requirements.txt && \
-    git clone https://github.com/ESA-PhiLab/OST_Notebooks
+ARG ost_repo=bcdev/OpenSarToolkit
+ARG ost_branch=version5
+
+# Invalidate Docker cache if there have been new commits to the repository
+ADD "https://api.github.com/repos/${ost_repo}/commits?sha=${ost_branch}&per_page=1" last_commit
+# Install OST and tutorials
+RUN python3 -m pip install git+https://github.com/${ost_repo}.git@${ost_branch} -c constraints.txt
 
 #RUN jupyter labextension install @jupyter-widgets/jupyterlab-manager
 #RUN jupyter nbextension enable --py widgetsnbextension
-RUN pip install widgetsnbextension
+#RUN pip install widgetsnbextension
 
-EXPOSE 8888
-CMD jupyter lab --ip='0.0.0.0' --port=8888 --no-browser --allow-root
+#EXPOSE 8888
+#CMD jupyter lab --ip='0.0.0.0' --port=8888 --no-browser --allow-root
