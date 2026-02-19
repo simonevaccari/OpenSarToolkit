@@ -87,8 +87,8 @@ def rasterio_save_cog_bbox(input_tif: Path, output_tif: Path, bbox: None) -> Non
             tmp.unlink()
 
 @click.command(
-    short_help="Tool to stagein a FLEX Product from the ESA MAAP portal",
-    help="Tool to stagein (ie download and create STAC Objects) a FLEX Product from the ESA MAAP portal",
+    short_help="Script to crop with BBOX and write to COG",
+    help="Script to crop with BBOX and write to COG",
 )
 @click.option(
     "input_tif",
