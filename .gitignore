@@ -142,3 +142,4 @@ resources/*-OST-*/*
 __pycache__/
 resources/archive/v2/params*
 resources/archive/v2/S1A_IW_GRDH_1SDV_20241113T170607_20241113T170632_056539_06EEA8_00D2_COG
+result-*

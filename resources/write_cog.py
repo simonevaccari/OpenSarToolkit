@@ -59,33 +59,6 @@ def rasterio_save_cog(input_tif: Path, output_tif: Path) -> None:
             tmp.unlink()
 
 
-def update_item_for_cog(item: dict, new_item_id: str, cog_rel_href: str, asset_key_hint: str | None = None) -> dict:
-    item = dict(item)
-    item["id"] = new_item_id
-
-    assets = item.get("assets") or {}
-    if not isinstance(assets, dict):
-        assets = {}
-
-    if asset_key_hint and asset_key_hint in assets:
-        k = asset_key_hint
-    elif len(assets) == 1:
-        k = next(iter(assets.keys()))
-    else:
-        k = "cog"
-
-    assets[k] = {
-        **(assets.get(k) if isinstance(assets.get(k), dict) else {}),
-        "href": cog_rel_href,
-        "type": "image/tiff; application=geotiff; profile=cloud-optimized",
-        "roles": list({*(assets.get(k, {}).get("roles") or []), "data"}),
-        "title": f"COG {Path(cog_rel_href).name}",
-    }
-
-    item["assets"] = assets
-    return item
-
-
 def main():
     if len(sys.argv) != 3:
         print("Usage: run_me.py <input_dir> <out_dir>", file=sys.stderr)
@@ -101,7 +74,7 @@ def main():
     catalog_path = in_dir / "catalog.json"
     if not catalog_path.exists():
         raise FileNotFoundError(f"Missing catalog.json at: {catalog_path}")
-    catalog = pystac.Catalog.from_file(catalog_path)
+    catalog = pystac.Catalog.from_file(str(catalog_path))
 
     # Read Item
     item_links = [link for link in catalog.links if link.rel == "item"]
@@ -122,7 +95,7 @@ def main():
     if not tif_path.exists():
         raise FileNotFoundError(f"TIFF asset path does not exist: {tif_path}")
 
-    # Output layout: only copy catalog.json + item json
+    # Output dir
     out_root = out_dir / f"{in_dir.name}-cog"
     out_root.mkdir(parents=True, exist_ok=True)
     logger.info(f"Out dir created: {out_root}")
@@ -150,26 +123,34 @@ def main():
 
     # Update Output STAC Item
     out_item.id = f"{out_item.id}-{Path(tif_path).stem}-cog"
-    logger.info(f"New item ID: {out_item}")
+    logger.info(f"New item ID: {out_item.id}")
 
     out_asset = out_item.assets[asset_key]
     
-    # Make the COG href relative to the item JSON location (recommended for portability)
-    cog_rel_href = os.path.relpath(out_cog_path, start=out_item_json_path.parent).replace("\\", "/")
-    logger.info(cog_rel_href)
+    # # Make the COG href relative to the item JSON location (recommended for portability)
+    # cog_rel_href = os.path.relpath(out_cog_path, start=out_item_json_path.parent).replace("\\", "/")
+    # logger.info(cog_rel_href)
 
     # Update the existing TIFF asset in-place (or you could add a new asset key)
     out_asset.href = out_cog_path.name
     out_asset.media_type = "image/tiff; application=geotiff; profile=cloud-optimized"
-    out_asset.title = f"{Path(cog_rel_href).name} COG"
+    out_asset.title = f"OST-processed ARD COG"
     # Keep existing roles if any; ensure "data" exists
     roles = list(out_asset.roles) if out_asset.roles else []
     if "data" not in roles:
         roles.append("data")
     out_asset.roles = roles
 
-    # Optional: update item self href to match output location (handy when saving)
-    item.set_self_href(str(out_item_json_path))
+    # Update asset key (need to remove asset and add it with the new key)
+    out_item.assets.pop(asset_key)
+    new_key = "ost-ard-cog"
+    out_item.add_asset(new_key, out_asset)
+
+
+
+
+    # Optional: update out_item self href to match output location (handy when saving)
+    out_item.set_self_href(str(out_item_json_path))
 
     # Save updated item
     out_item.set_self_href(str(out_item_json_path))
