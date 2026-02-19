@@ -386,7 +386,7 @@ $graph:
       ost_ard_cog:
         type: Directory
         outputBinding:
-          glob: $(inputs.input_tif.basename + "-cog")
+          glob: ost-ard-cog
         
     requirements:
       DockerRequirement:
@@ -514,7 +514,6 @@ $graph:
                 print(f"STARTING NOW")
                 if bbox is None: print("No BBOX, no cropping")
                 else: print("BBOX is provided, cropping and then creating COG")
-                stop
                 
                 in_dir = Path(input_tif).resolve() 
                 out_dir = Path.cwd().resolve() 
@@ -547,7 +546,7 @@ $graph:
                     raise FileNotFoundError(f"TIFF asset path does not exist: {tif_path}")
 
                 # Output dir
-                out_root = out_dir / f"{in_dir.name}-cog"
+                out_root = out_dir / "ost-ard-cog"
                 out_root.mkdir(parents=True, exist_ok=True)
                 print(f"Out dir created: {out_root}")
 
