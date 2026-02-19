@@ -421,6 +421,7 @@ $graph:
             from rasterio.enums import Resampling
             from rasterio.shutil import copy as rio_copy
             from rasterio.windows import from_bounds, Window, transform as window_transform
+            from rasterio.windows import bounds as window_bounds
 
             # Debug search_request
             print("DEBUG search_request =", os.environ.get("SEARCH_REQUEST"))
@@ -446,6 +447,9 @@ $graph:
                         if win.width <= 0 or win.height <= 0:
                             raise ValueError("BBOX does not intersect raster extent (empty window).")
 
+                        # Compute the *actual* bounds we will write, snapped to pixels and clipped
+                        out_bounds = window_bounds(win, src.transform)
+
                         arr = src.read(window=win)
                         new_transform = window_transform(win, src.transform)
 
@@ -456,6 +460,7 @@ $graph:
                         )
                     else:
                         arr = src.read()
+                        out_bounds = src.bounds
 
                 if np.issubdtype(arr.dtype, np.floating):
                     nan_mask = np.isnan(arr)
@@ -494,6 +499,8 @@ $graph:
                 finally:
                     if tmp.exists():
                         tmp.unlink()
+
+                return out_bounds
 
             @click.command(
                 short_help="Script to crop with BBOX and write to COG",
@@ -569,8 +576,7 @@ $graph:
                 print(f"COG will be written to: {out_cog_path}")
 
                 # Create COG and crop with BBOX
-                # rasterio_save_cog(tif_path, out_cog_path)
-                rasterio_save_cog_bbox(tif_path, out_cog_path, bbox=bbox)
+                out_bounds = rasterio_save_cog_bbox(tif_path, out_cog_path, bbox=bbox)
                 
                 # Update Output STAC Item
                 out_item.id = f"{out_item.id}-{Path(tif_path).stem}-cog"
@@ -592,6 +598,20 @@ $graph:
                 out_item.assets.pop(asset_key)
                 new_key = "ost-ard-cog"
                 out_item.add_asset(new_key, out_asset)
+
+                # Update spatial fields to match output
+                minx, miny, maxx, maxy = float(out_bounds[0]), float(out_bounds[1]), float(out_bounds[2]), float(out_bounds[3])
+                out_item.bbox = [minx, miny, maxx, maxy]
+                out_item.geometry = {
+                    "type": "Polygon",
+                    "coordinates": [[
+                        [minx, miny],
+                        [minx, maxy],
+                        [maxx, maxy],
+                        [maxx, miny],
+                        [minx, miny],
+                    ]]
+                }
 
                 # Optional: update out_item self href to match output location (handy when saving)
                 out_item.set_self_href(str(out_item_json_path))
