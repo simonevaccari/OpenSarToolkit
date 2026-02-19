@@ -86,53 +86,6 @@ def rasterio_save_cog_bbox(input_tif: Path, output_tif: Path, bbox: None) -> Non
         if tmp.exists():
             tmp.unlink()
 
-
-
-# Function to only create COG (without cropping with BBOX)
-def rasterio_save_cog(input_tif: Path, output_tif: Path) -> None:
-    
-    factors = [2, 4, 8, 16, 32, 64]
-
-    with rasterio.open(input_tif) as src:
-        arr = src.read()
-        profile = src.profile.copy()
-
-    if np.issubdtype(arr.dtype, np.floating):
-        nan_mask = np.isnan(arr)
-        if nan_mask.any():
-            arr = arr.copy()
-            arr[nan_mask] = 0
-
-    profile.update(
-        driver="GTiff",
-        tiled=True,
-        blockxsize=256,
-        blockysize=256,
-        compress="deflate",
-        BIGTIFF="IF_NEEDED",
-        count=arr.shape[0],
-    )
-
-    tmp = output_tif.with_name(output_tif.stem + "_temp.tif")
-    tmp.parent.mkdir(parents=True, exist_ok=True)
-
-    try:
-        with rasterio.open(tmp, "w", **profile) as dst:
-            dst.write(arr)
-            dst.build_overviews(factors, Resampling.nearest)
-            dst.update_tags(ns="rio_overview", resampling="nearest")
-
-        rio_copy(
-            str(tmp),
-            str(output_tif),
-            copy_src_overviews=True,
-            driver="COG",
-            compress="deflate",
-        )
-    finally:
-        if tmp.exists():
-            tmp.unlink()
-
 @click.command(
     short_help="Tool to stagein a FLEX Product from the ESA MAAP portal",
     help="Tool to stagein (ie download and create STAC Objects) a FLEX Product from the ESA MAAP portal",
@@ -223,10 +176,6 @@ def main(input_tif, output_tif, bbox):
 
     out_asset = out_item.assets[asset_key]
     
-    # # Make the COG href relative to the item JSON location (recommended for portability)
-    # cog_rel_href = os.path.relpath(out_cog_path, start=out_item_json_path.parent).replace("\\", "/")
-    # logger.info(cog_rel_href)
-
     # Update the existing TIFF asset in-place (or you could add a new asset key)
     out_asset.href = out_cog_path.name
     out_asset.media_type = "image/tiff; application=geotiff; profile=cloud-optimized"
@@ -242,9 +191,6 @@ def main(input_tif, output_tif, bbox):
     new_key = "ost-ard-cog"
     out_item.add_asset(new_key, out_asset)
 
-
-
-
     # Optional: update out_item self href to match output location (handy when saving)
     out_item.set_self_href(str(out_item_json_path))
 
@@ -255,11 +201,6 @@ def main(input_tif, output_tif, bbox):
     logger.info(f"Catalog copied to: {out_catalog_path}")
     logger.info(f"Item updated and saved to: {out_item_json_path}")
     logger.info(f"COG written to: {out_cog_path}")
-
-    print(f"Catalog: {out_catalog_path}")
-    print(f"Item: {out_item_json_path}")
-    print(f"COG:  {out_cog_path}")
-
 
 if __name__ == "__main__":
     main()
