@@ -1,0 +1,48 @@
+input_tif:
+  class: Directory
+  path: /workspace/APEx/OpenSarToolkit/result-item-tif
+
+# output_tif:
+#   class: Directory
+#   path: /workspace/APEx/OpenSarToolkit/
+
+
+
+search_request:
+  collections:
+    - SENTINEL-1
+  bbox:
+    - 12.146
+    - 41.701
+    - 12.629
+    - 41.967
+  datetime_interval:
+    end:
+      value: "2024-11-15T23:59:59"
+    start:
+      value: "2024-11-13T00:00:00"
+  filter-lang: cql2-json
+  filter:
+    {
+      "op": "and",
+      "args":
+        [
+          # {"op": "eq", "args": [{"property": "relativeOrbitNumber"}, 117]},
+          # {"op": "eq", "args": [{"property": "orbitDirection"}, "ASCENDING"]},
+          # {"op": "eq", "args": [{"property": "platformShortName"}, "SENTINEL-1"]},
+          # {"op": "eq", "args": [{"property": "platformSerialIdentifier"}, "A"]},
+          {
+            "op": "in",
+            "args":
+              [
+                { "property": "productType" },
+                [
+                  "IW_GRHD_1S",
+                  "IW_GRDH_1S",
+                  "IW_GRHD_1S-COG",
+                  "IW_GRDH_1S-COG"
+                ]
+              ]
+          }
+        ]
+    }
