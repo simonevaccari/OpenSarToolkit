@@ -128,17 +128,10 @@ $graph:
     class: ExpressionTool
     requirements:
     - class: InlineJavascriptRequirement
-    - class: SchemaDefRequirement
-      types:
-        - $import: https://raw.githubusercontent.com/eoap/schemas/main/geojson.yaml
-        - $import: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml
-        - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml
     inputs:
-      search_request: 
-        type: https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml#STACSearchSettings
+      search_request: Any
     outputs:
-      normalised: 
-        type: https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml#STACSearchSettings
+      normalised: Any
     expression: |
       ${
         const sr = inputs.search_request || {};
@@ -159,6 +152,7 @@ $graph:
           start: { value: iso(t - 6*864e5) },
           end:   { value: iso(t + 6*864e5) }
         };
+        out.datetime_interval = out["datetime-interval"];
         return { normalized: out };
       }
 
