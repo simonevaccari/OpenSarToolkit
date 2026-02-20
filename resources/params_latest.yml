@@ -3,8 +3,8 @@ ard-type: 'OST_GTC'
 with-speckle-filter: "NO-FILTER"
 resampling-method: 'BILINEAR_INTERPOLATION' # 'BICUBIC_INTERPOLATION'
 
-# odata_api_endpoint:
-api_endpoint:
+odata_api_endpoint: 
+# api_endpoint:
   headers: []
   url:
     value: https://catalogue.dataspace.copernicus.eu/odata/v1/Products # odata_api_endpoint
@@ -45,8 +45,8 @@ search_request:
                 [
                   "IW_GRHD_1S",
                   "IW_GRDH_1S",
-                  "IW_GRHD_1S-COG",
-                  "IW_GRDH_1S-COG"
+                  # "IW_GRHD_1S-COG",
+                  # "IW_GRDH_1S-COG"
                 ]
               ]
           }
