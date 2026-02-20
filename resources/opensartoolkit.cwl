@@ -70,20 +70,19 @@ $graph:
           type: array
           items: Directory
     steps:
-      # make_daterange:
-      #   label: Convert Search
-      #   doc: Convert Search results to get the item self hrefs  
-      #   in:
-      #     search_request: search_request
-      #   run: "#make_daterange"
-      #   out: 
-      #     - search_request_daterange
+
+      normalize_search_request:
+        run: "#normalize_search_request"
+        in:
+          search_request: search_request
+        out: [normalized]
+
       discovery:
         label: OData API discovery
         doc: Discover STAC items from a OData API endpoint based on a search request
         in:
           api_endpoint: odata_api_endpoint
-          search_request: search_request
+          search_request: normalize_search_request/normalized
         run: https://github.com/eoap/schemas/releases/download/0.3.0/odata-client.0.3.0.cwl
         out:
           - search_output
@@ -113,16 +112,57 @@ $graph:
           with-speckle-filter: with-speckle-filter
           resampling-method: resampling-method
         out: [ost_ard]
-      # write_cog:
-      #   run: "#write-cog"
-      #   scatter: input_tif, reference_ID
-      #   in:
-      #     input_tif: run_script/ost_ard # dir containinig the OST-processed TIFF to write to COG
-      #     search_request: search_request # for the BBOX
-      #     reference_ID: convert_search/items # for the reference_ID to fix the STAC Item
-      #   out: [ost_ard_cog]
+      write_cog:
+        run: "#write-cog"
+        scatter: input_tif
+        in:
+          input_tif: run_script/ost_ard # dir containinig the OST-processed TIFF to write to COG
+          search_request: search_request # for the BBOX
+          #reference_ID: convert_search/items # for the reference_ID to fix the STAC Item
+        out: [ost_ard_cog]
 
         
+# =====================================
+ 
+  - id: normalize_search_request
+    class: ExpressionTool
+    requirements:
+    - class: InlineJavascriptRequirement
+    - class: SchemaDefRequirement
+      types:
+        - $import: https://raw.githubusercontent.com/eoap/schemas/main/geojson.yaml
+        - $import: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml
+        - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml
+    inputs:
+      search_request: 
+        type: https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml#STACSearchSettings
+    outputs:
+      normalised: 
+        type: https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml#STACSearchSettings
+    expression: |
+      ${
+        const sr = inputs.search_request || {};
+        const interval = sr["datetime-interval"] ?? sr.datetime_interval;
+        if (interval) return { normalized: sr };
+
+        const v = sr?.datetime?.value ?? sr?.datetime;
+        if (!v) throw new Error("Provide either search_request.datetime(.value) or search_request.datetime_interval");
+
+        const t = Date.parse(v);
+        if (Number.isNaN(t)) throw new Error("Invalid datetime: " + v);
+
+        const iso = (ms) => new Date(ms).toISOString().replace(/\.\d+Z$/, "Z");
+        const out = { ...sr };
+        delete out.datetime;
+
+        out["datetime-interval"] = {
+          start: { value: iso(t - 6*864e5) },
+          end:   { value: iso(t + 6*864e5) }
+        };
+        return { normalized: out };
+      }
+
+
 # =====================================
 
   - id: convert-search
