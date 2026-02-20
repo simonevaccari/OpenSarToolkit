@@ -22,11 +22,13 @@ search_request:
     # - 42.188
     # - 12.777
     # - 42.35
-  datetime_interval:
-    end:
-      value: "2024-11-15T23:59:59"
-    start:
-      value: "2024-11-13T00:00:00"
+  # datetime_interval:
+  #   end:
+  #     value: "2024-11-15T23:59:59"
+  #   start:
+  #     value: "2024-11-13T00:00:00"
+  datetime:
+    value: "2024-11-13T00:00:00"
   filter-lang: cql2-json
   filter:
     {

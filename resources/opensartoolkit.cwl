@@ -70,19 +70,17 @@ $graph:
           type: array
           items: Directory
     steps:
-
       normalize_search_request:
         run: "#normalize_search_request"
         in:
           search_request: search_request
-        out: [normalized]
-
+        out: [normalised]
       discovery:
         label: OData API discovery
         doc: Discover STAC items from a OData API endpoint based on a search request
         in:
           api_endpoint: odata_api_endpoint
-          search_request: normalize_search_request/normalized
+          search_request: normalize_search_request/normalised
         run: https://github.com/eoap/schemas/releases/download/0.3.0/odata-client.0.3.0.cwl
         out:
           - search_output
@@ -136,7 +134,7 @@ $graph:
       ${
         const sr = inputs.search_request || {};
         const interval = sr["datetime-interval"] ?? sr.datetime_interval;
-        if (interval) return { normalized: sr };
+        if (interval) return { normalised: sr };
 
         const v = sr?.datetime?.value ?? sr?.datetime;
         if (!v) throw new Error("Provide either search_request.datetime(.value) or search_request.datetime_interval");
@@ -149,11 +147,14 @@ $graph:
         delete out.datetime;
 
         out["datetime-interval"] = {
-          start: { value: iso(t - 6*864e5) },
-          end:   { value: iso(t + 6*864e5) }
+          // start: { value: iso(t - 6*864e5) },
+          // end:   { value: iso(t + 6*864e5) }
+          start: { value: iso(t - 1*864e5) },
+          end:   { value: iso(t + 1*864e5) }
+
         };
         out.datetime_interval = out["datetime-interval"];
-        return { normalized: out };
+        return { normalised: out };
       }
 
 
