@@ -1,0 +1,39 @@
+resolution: 100
+ard-type: 'OST_GTC'
+with-speckle-filter: "NO-FILTER"
+resampling-method: 'BILINEAR_INTERPOLATION' # 'BICUBIC_INTERPOLATION'
+
+odata_api_endpoint: 
+  headers: []
+  url:
+    value: https://catalogue.dataspace.copernicus.eu/odata/v1/Products # odata_api_endpoint
+
+search_request:
+  collections:
+    - SENTINEL-1
+  bbox:
+    - 12.146
+    - 41.701
+    - 12.629
+    - 41.967
+  datetime:
+    value: "2024-11-12T00:00:00"
+  filter-lang: cql2-json
+  filter:
+    {
+      "op": "and",
+      "args":
+        [
+          {
+            "op": "in",
+            "args":
+              [
+                { "property": "productType" },
+                [
+                  "IW_GRHD_1S",
+                  "IW_GRDH_1S",
+                ]
+              ]
+          }
+        ]
+    }
