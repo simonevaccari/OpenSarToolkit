@@ -1,7 +1,7 @@
 cwlVersion: v1.2
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 2.1.1
+s:softwareVersion: 2.1.2
 schemas:
 - http://schema.org/version/9.0/schemaorg-current-http.rdf
 
@@ -14,12 +14,12 @@ $graph:
       NetworkAccess:
         networkAccess: true
       ScatterFeatureRequirement: {}
+      SubworkflowFeatureRequirement: {}
       SchemaDefRequirement:
         types:
           - $import: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml
           - $import: https://raw.githubusercontent.com/eoap/schemas/main/geojson.yaml
-          - $import: |-
-              https://raw.githubusercontent.com/eoap/schemas/main/experimental/api-endpoint.yaml
+          - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/api-endpoint.yaml
           - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml
     inputs:
       odata_api_endpoint:
@@ -65,7 +65,7 @@ $graph:
     outputs:
       output:
         outputSource: 
-          - run_script/ost_ard
+          - s1_subworkflow/ost_ard_cog
         type: 
           type: array
           items: Directory
@@ -85,40 +85,26 @@ $graph:
         out:
           - search_output
       convert_search:
+        run: "#convert-search"
         label: Convert Search
         doc: Convert Search results to get the item self hrefs  
         in:
           search_results: discovery/search_output
           search_request: search_request
-        run: "#convert-search"
         out: [items]
-      stage_in:
-        label: Stage-in S1 data 
-        doc: Stage-in S1 data with Arvesto
+      s1_subworkflow:
+        run: "#s1_subworkflow"
+        label: Sub-workflow to process searched S1 data
+        doc: Sub-workflow to process searched S1 data
         scatter: reference_ID
         in:
           reference_ID: convert_search/items
-        run: "#stage-in"
-        out: [staged]
-      run_script:
-        run: "#ost_run"
-        scatter: input
-        in:
-          input: stage_in/staged
           resolution: resolution
           ard-type: ard-type
           with-speckle-filter: with-speckle-filter
           resampling-method: resampling-method
-        out: [ost_ard]
-      write_cog:
-        run: "#write-cog"
-        scatter: input_tif
-        in:
-          input_tif: run_script/ost_ard # dir containinig the OST-processed TIFF to write to COG
-          search_request: search_request # for the BBOX
-          #reference_ID: convert_search/items # for the reference_ID to fix the STAC Item
+          search_request: search_request 
         out: [ost_ard_cog]
-
         
 # =====================================
  
@@ -175,8 +161,7 @@ $graph:
       types:
       - $import: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml
       - $import: https://raw.githubusercontent.com/eoap/schemas/main/geojson.yaml
-      - $import: |-
-          https://raw.githubusercontent.com/eoap/schemas/main/experimental/api-endpoint.yaml
+      - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/api-endpoint.yaml
       - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml
     - class: InitialWorkDirRequirement
       listing:
@@ -210,6 +195,92 @@ $graph:
           outputEval: ${ return JSON.parse(self[0].contents); }
 
 # =====================================
+
+  - id: s1_subworkflow
+    label: Sub-workflow to process searched S1 data
+    class: Workflow
+    doc: Stage-in, OST processing, creation of COG
+    
+    requirements: 
+      NetworkAccess:
+        networkAccess: true
+      SchemaDefRequirement:
+        types:
+          - $import: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml
+          - $import: https://raw.githubusercontent.com/eoap/schemas/main/geojson.yaml
+          - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/api-endpoint.yaml
+          - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml
+    inputs:
+      reference_ID:
+        label: Product reference ID
+        type: array
+        items: string
+      search_request:
+        label: STAC search request
+        doc: STAC search request
+        type: |-
+          https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml#STACSearchSettings
+      resolution:
+        type: int
+        label: Resolution
+        doc: Resolution in metres
+      ard-type:
+        label: ARD type
+        doc: Type of analysis-ready data to produce
+        type:
+        - symbols:
+          - OST_GTC
+          - OST-RTC
+          - CEOS
+          - Earth-Engine
+          type: enum
+      with-speckle-filter:
+        label: Speckle filter
+        doc: Whether to apply a speckle filter
+        type:
+        - symbols:
+          - APPLY-FILTER
+          - NO-FILTER
+          type: enum
+      resampling-method:
+        label: Resampling method
+        doc: Resampling method to use
+        type:
+        - symbols:
+          - BILINEAR_INTERPOLATION
+          - BICUBIC_INTERPOLATION
+          type: enum
+    outputs:
+      ost_ard_cog:
+        outputSource: write_cog/ost_ard_cog
+        type: Directory
+    steps:
+      stage_in:
+        label: Stage-in S1 data 
+        doc: Stage-in S1 data with Arvesto
+        in:
+          reference_ID: reference_ID
+        run: "#stage-in"
+        out: [staged]
+      run_script:
+        run: "#ost_run"
+        in:
+          input: stage_in/staged
+          resolution: resolution
+          ard-type: ard-type
+          with-speckle-filter: with-speckle-filter
+          resampling-method: resampling-method
+        out: [ost_ard]
+      write_cog:
+        run: "#write-cog"
+        in:
+          input_tif: run_script/ost_ard # dir containinig the OST-processed TIFF to write to COG
+          bbox:
+            valueFrom: "$(inputs.search_request && inputs.search_request.bbox ? inputs.search_request.bbox : null)"
+          reference_ID: reference_ID # for the reference_ID to fix the STAC Item
+        out: [ost_ard_cog]
+
+# ======================================
 
   - id: stage-in
     class: CommandLineTool
@@ -396,32 +467,30 @@ $graph:
     baseCommand: ["python3", "write_cog.py"]
     inputs:
       input_tif:
+        label: Input TIFF file
         type: Directory
         inputBinding:
           prefix: --input_tif
-      search_request:
-        type: Any
-      
-      # reference_ID:
-        # type: string
-        # inputBinding:
-        #   prefix: --reference_ID
-
-    arguments:
-      - valueFrom: |
-              ${
-                if (inputs.search_request && inputs.search_request.bbox && inputs.search_request.bbox.length === 4) {
-                  return ["--bbox"].concat(inputs.search_request.bbox);
-                }
-                return [];
-              }
-        shellQuote: false
+      reference_ID:
+        label: Product reference ID
+        type: string
+        inputBinding:
+          prefix: --reference-id
+      bbox:
+        label: Bounding Box
+        type: 
+          - "null"
+          - type: array
+            items: double
+        inputBinding:
+          prefix: --bbox
+          separate: True
 
     outputs:
       ost_ard_cog:
         type: Directory
         outputBinding:
-          glob: ost-ard-cog
+          glob: $(inputs.reference_ID + "-COG")
         
     requirements:
       DockerRequirement:
@@ -431,9 +500,6 @@ $graph:
       ResourceRequirement:
         coresMax: 6
         ramMax: 24000
-      EnvVarRequirement:
-        envDef:
-          SEARCH_REQUEST: $(JSON.stringify(inputs.search_request))
       InlineJavascriptRequirement: {}
       InitialWorkDirRequirement:
         listing:
@@ -457,9 +523,6 @@ $graph:
             from rasterio.shutil import copy as rio_copy
             from rasterio.windows import from_bounds, Window, transform as window_transform
             from rasterio.windows import bounds as window_bounds
-
-            # Debug search_request
-            print("DEBUG search_request =", os.environ.get("SEARCH_REQUEST"))
 
             # Function to crop with BBOX and create COG
             def rasterio_save_cog_bbox(input_tif: Path, output_tif: Path, bbox=None) -> None:
@@ -547,15 +610,27 @@ $graph:
                 required=True,
             )
             @click.option(
+                "--reference-id",
+                "reference_id",
+                help="Reference ID",
+                required=True,
+            )
+            @click.option(
                 "--bbox",
                 type=(float, float, float, float),
                 help="Bounding box to use for cropping the COG output",
             )
-            def main(input_tif, bbox):
+            def main(input_tif, reference_id, bbox):
 
-                print(f"STARTING NOW")
-                if bbox is None: print("No BBOX, no cropping")
-                else: print("BBOX is provided, cropping and then creating COG")
+                print(f"Start processing: {reference_id}")
+                
+                # BBOX check
+                if bbox is not None and len(bbox) != 4:
+                    raise ValueError("bbox must have 4 elements: minx miny maxx maxy")
+                if bbox is None: 
+                    print("No BBOX, no cropping")
+                else: 
+                    print("BBOX is provided, cropping and then creating COG")
                 
                 in_dir = Path(input_tif).resolve() 
                 out_dir = Path.cwd().resolve() 
@@ -588,54 +663,55 @@ $graph:
                     raise FileNotFoundError(f"TIFF asset path does not exist: {tif_path}")
 
                 # Output dir
-                out_root = out_dir / "ost-ard-cog"
+                bundle_name = f"{reference_id}-COG"
+                out_root = Path.cwd().resolve() / bundle_name
                 out_root.mkdir(parents=True, exist_ok=True)
-                print(f"Out dir created: {out_root}")
-
-                # Copy catalog.json
-                out_catalog_path = out_root / "catalog.json"
-                shutil.copy2(catalog_path, out_catalog_path)
-
-                # Copy item JSON to same relative location as in input
-                rel_item_json = item_json_path.relative_to(in_dir)
-                out_item_json_path = out_root / rel_item_json
-                out_item_json_path.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(item_json_path, out_item_json_path)
-
-                # Re-load the OUT item 
-                out_item = pystac.Item.from_file(str(out_item_json_path))
-
-                # Decide where to write the COG: alongside the output item JSON
-                cog_name = f"{Path(tif_path).stem}_cog.tif"
-                out_cog_path = out_item_json_path.parent / cog_name
-                print(f"COG will be written to: {out_cog_path}")
-
-                # Create COG and crop with BBOX
-                out_bounds = rasterio_save_cog_bbox(tif_path, out_cog_path, bbox=bbox)
                 
-                # Update Output STAC Item
-                out_item.id = f"{out_item.id}-{Path(tif_path).stem}-cog"
+                # Directory + JSON base name (matches your example)
+                out_item_dir = out_root / bundle_name
+                out_item_dir.mkdir(parents=True, exist_ok=True)
+
+                out_item_json_path = out_item_dir / f"{bundle_name}.json"
+                tif_fname = "ost-ard-cog" 
+                out_cog_path = out_item_dir / f"{tif_fname}.tif"
+
+                # Set path of catalog
+                out_catalog_path = out_root / "catalog.json"
+                
+                print(f"Bundle root: {out_root}")
+                print(f"Catalog: {out_catalog_path}")
+                print(f"Out item dir: {out_item_dir}")
+                print(f"Out item JSON: {out_item_json_path}")
+                print(f"Out COG: {out_cog_path}")
+
+                # --- Create COG (cropped or full) ---
+                out_bounds = rasterio_save_cog_bbox(tif_path, out_cog_path, bbox=bbox)
+
+                # --- Build output STAC Item ---
+                # Start from the original item object, but rewrite it for the new structure
+                out_item = item.clone()
+
+                # 1) Set item id 
+                out_item.id = bundle_name
                 print(f"New item ID: {out_item.id}")
 
-                out_asset = out_item.assets[asset_key]
-                
-                # Update the existing TIFF asset in-place (or you could add a new asset key)
-                out_asset.href = out_cog_path.name
-                out_asset.media_type = "image/tiff; application=geotiff; profile=cloud-optimized"
-                out_asset.title = f"OST-processed ARD COG"
-                # Keep existing roles if any; ensure "data" exists
-                roles = list(out_asset.roles) if out_asset.roles else []
-                if "data" not in roles:
-                    roles.append("data")
-                out_asset.roles = roles
+                # 2) Ensure self href points to the new JSON path
+                out_item.set_self_href(str(out_item_json_path))
 
-                # Update asset key (need to remove asset and add it with the new key)
-                out_item.assets.pop(asset_key)
-                new_key = "ost-ard-cog"
-                out_item.add_asset(new_key, out_asset)
+                # 3) Build a new asset for the COG
+                cog_asset = pystac.Asset(
+                    href=out_cog_path.name,  # relative inside item dir
+                    media_type="image/tiff; application=geotiff; profile=cloud-optimized",
+                    title="OST-processed ARD COG",
+                    roles=["data", "visual"],
+                )
 
-                # Update spatial fields to match output
-                minx, miny, maxx, maxy = float(out_bounds[0]), float(out_bounds[1]), float(out_bounds[2]), float(out_bounds[3])
+                # Replace assets with only the COG (optional, but keeps things clean)
+                out_item.assets = {}
+                out_item.add_asset(tif_fname, cog_asset)
+
+                # 4) Update spatial fields to match output bounds (cropped or full)
+                minx, miny, maxx, maxy = map(float, out_bounds)
                 out_item.bbox = [minx, miny, maxx, maxy]
                 out_item.geometry = {
                     "type": "Polygon",
@@ -648,16 +724,25 @@ $graph:
                     ]]
                 }
 
-                # Optional: update out_item self href to match output location (handy when saving)
+                # --- Build output Catalog with correct link to the new item ---
+                out_catalog = pystac.Catalog(
+                    id="ost-ard-cog-catalog",
+                    description="OST ARD COG output",
+                )
+
+                # Set correct hrefs 
+                out_catalog.set_self_href(str(out_catalog_path))
                 out_item.set_self_href(str(out_item_json_path))
 
-                # Save updated item
-                out_item.set_self_href(str(out_item_json_path))
-                out_item.save_object(dest_href=str(out_item_json_path))
+                out_catalog.add_item(out_item)
 
-                print(f"Catalog copied to: {out_catalog_path}")
-                print(f"Item updated and saved to: {out_item_json_path}")
+                # Save catalog + item
+                out_catalog.save(catalog_type=pystac.CatalogType.SELF_CONTAINED)
+
+                print(f"Catalog written to: {out_catalog_path}")
+                print(f"Item written to: {out_item_json_path}")
                 print(f"COG written to: {out_cog_path}")
+
 
             if __name__ == "__main__":
                 main()
