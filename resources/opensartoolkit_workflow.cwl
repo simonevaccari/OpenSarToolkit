@@ -72,6 +72,7 @@ $graph:
     steps:
       normalize_search_request:
         run: "#normalize_search_request"
+        label: Converts datetime in datetime_interval
         in:
           search_request: search_request
         out: [normalised]
@@ -133,11 +134,8 @@ $graph:
         delete out.datetime;
 
         out["datetime-interval"] = {
-          // start: { value: iso(t - 1*864e5) },
-          // end:   { value: iso(t + 1*864e5) }
-          start: { value: iso(t - 1*864e5) },
-          end:   { value: iso(t + 1*864e5) }
-
+          start: { value: iso(t - 6*864e5) },
+          end:   { value: iso(t + 6*864e5) }
         };
         out.datetime_interval = out["datetime-interval"];
         return { normalised: out };
@@ -151,30 +149,11 @@ $graph:
     label: Gets the item self hrefs
     doc: Gets the item self hrefs from a STAC search result
     baseCommand: ["/bin/sh", "run.sh"]
-    arguments: []
+    arguments: 
+      - valueFrom: $(inputs.search_results.path)
     hints:
       DockerRequirement:
         dockerPull: ghcr.io/eoap/zarr-cloud-native-format/yq@sha256:401655f3f4041bf3d03b05f3b24ad4b9d18cfcf908c3b44f5901383621d0688a
-    requirements:
-    - class: InlineJavascriptRequirement
-    - class: SchemaDefRequirement
-      types:
-      - $import: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml
-      - $import: https://raw.githubusercontent.com/eoap/schemas/main/geojson.yaml
-      - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/api-endpoint.yaml
-      - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml
-    - class: InitialWorkDirRequirement
-      listing:
-      - entryname: run.sh
-        entry: |-
-          #!/usr/bin/env sh
-          set -x
-          set -euo pipefail
-
-          yq '[.features[].links[] | select(.rel=="derived_from") | .href | capture("Name%20eq%20%27(?<name>[^%]+)\\.SAFE%27") | .name]' "$(inputs.search_results.path)" > items.json
-
-          echo "Items IDs extracted"
-          cat items.json
     inputs:
       search_request:
         label: Search Request
@@ -193,6 +172,68 @@ $graph:
           glob: items.json
           loadContents: true
           outputEval: ${ return JSON.parse(self[0].contents); }
+
+    requirements:
+    - class: InlineJavascriptRequirement
+    - class: SchemaDefRequirement
+      types:
+      - $import: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml
+      - $import: https://raw.githubusercontent.com/eoap/schemas/main/geojson.yaml
+      - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/api-endpoint.yaml
+      - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml
+    - class: EnvVarRequirement
+      envDef:
+        SEARCH_REQUEST: $(JSON.stringify(inputs.search_request))
+    - class: InitialWorkDirRequirement
+      listing:
+      - entryname: run.sh
+        entry: |-
+          #!/usr/bin/env sh
+          set -x
+          set -euo pipefail
+
+          # # ==============================================================
+          # Select ALL suitable Sentinel-1 scenes within the time interval 
+          # yq '[.features[].links[] | select(.rel=="derived_from") | .href | capture("Name%20eq%20%27(?<name>[^%]+)\\.SAFE%27") | .name]' "$(inputs.search_results.path)" > items.json
+          # echo "Items IDs extracted" 
+          # cat items.json
+          # # ==============================================================
+          
+          # ==============================================================
+          # Select only the best candidate, ie S1 scene closest to target_date
+          search_results="$1"
+
+          target_day="\$(echo "$SEARCH_REQUEST" | yq -r '.datetime.value' | cut -c1-10 | tr -d '-')"
+          echo "Target datetime: $target_day"
+
+          # Extract product IDs (one per line)
+          yq -r '
+            .features[].links[]
+            | select(.rel=="derived_from")
+            | .href
+            | capture("Name%20eq%20%27(?<name>[^%]+)\\.SAFE%27").name
+          ' "$search_results" > candidates.txt
+
+          echo "Candidates:"
+          cat candidates.txt
+
+          # Choose same-day if exists; else first
+          best="\$(awk -v td="$target_day" '
+            $0 ~ "_" td "T" { print; exit }
+            NR==1 { first=$0 }
+            END { if (first && !found) print first }
+          ' candidates.txt | head -n 1)"
+
+          # Write JSON array (what your outputEval expects)
+          if [ -z "$best" ]; then
+            echo "[]" > items.json
+          else
+            printf '["%s"]\n' "$best" > items.json
+          fi
+
+          echo "Selected item(s):"
+          cat items.json
+
 
 # =====================================
 
