@@ -205,6 +205,7 @@ $graph:
       NetworkAccess:
         networkAccess: true
       InlineJavascriptRequirement: {}
+      StepInputExpressionRequirement: {}
       SchemaDefRequirement:
         types:
           - $import: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml
