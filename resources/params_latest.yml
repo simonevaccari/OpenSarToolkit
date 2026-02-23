@@ -28,7 +28,7 @@ search_request:
   #   start:
   #     value: "2024-11-13T00:00:00"
   datetime:
-    value: "2024-11-13T00:00:00"
+    value: "2024-11-12T00:00:00"
   filter-lang: cql2-json
   filter:
     {

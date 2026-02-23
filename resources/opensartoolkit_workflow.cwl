@@ -204,6 +204,7 @@ $graph:
     requirements: 
       NetworkAccess:
         networkAccess: true
+      InlineJavascriptRequirement: {}
       SchemaDefRequirement:
         types:
           - $import: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml
@@ -213,8 +214,7 @@ $graph:
     inputs:
       reference_ID:
         label: Product reference ID
-        type: array
-        items: string
+        type: string
       search_request:
         label: STAC search request
         doc: STAC search request
@@ -275,8 +275,9 @@ $graph:
         run: "#write-cog"
         in:
           input_tif: run_script/ost_ard # dir containinig the OST-processed TIFF to write to COG
-          bbox:
-            valueFrom: "$(inputs.search_request && inputs.search_request.bbox ? inputs.search_request.bbox : null)"
+          bbox: 
+            source: search_request
+            valueFrom: $(self.bbox)
           reference_ID: reference_ID # for the reference_ID to fix the STAC Item
         out: [ost_ard_cog]
 
