@@ -1,7 +1,7 @@
 cwlVersion: v1.2
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 2.1.2
+s:softwareVersion: 2.1.3
 schemas:
 - http://schema.org/version/9.0/schemaorg-current-http.rdf
 
@@ -150,10 +150,7 @@ $graph:
     doc: Gets the item self hrefs from a STAC search result
     baseCommand: ["/bin/sh", "run.sh"]
     arguments: 
-      - valueFrom: $(inputs.search_results.path)
-    hints:
-      DockerRequirement:
-        dockerPull: ghcr.io/eoap/zarr-cloud-native-format/yq@sha256:401655f3f4041bf3d03b05f3b24ad4b9d18cfcf908c3b44f5901383621d0688a
+      - valueFrom: $(inputs.search_results.path)      
     inputs:
       search_request:
         label: Search Request
@@ -174,6 +171,8 @@ $graph:
           outputEval: ${ return JSON.parse(self[0].contents); }
 
     requirements:
+    - class: DockerRequirement
+      dockerPull: ghcr.io/eoap/zarr-cloud-native-format/yq@sha256:401655f3f4041bf3d03b05f3b24ad4b9d18cfcf908c3b44f5901383621d0688a
     - class: InlineJavascriptRequirement
     - class: SchemaDefRequirement
       types:
