@@ -1,0 +1,19 @@
+provider_config: knative-test
+storage_class: "openebs-kernel-nfs-scw" # the RWX storage class for the calrissian job
+service_account: "argo-sa" # the service account for the argo workflows
+calrissian_node_selector: # node selector for the calrissian pods
+    "k8s.scaleway.com/pool-name": "node-pool-graphista"
+argo_node_selector: # node selector for the argo workflows pods
+    "k8s.scaleway.com/pool-name": "node-pool-graphista"
+default_volume_size: "20Gi" # wdir volume size
+default_max_cores: "15"
+default_max_ram: "20Gi"
+cwl_runner: # this is the cwl runner template definition
+  template_ref: "argo-cwl-runner-stage-in-out-coplac" # required
+  template_entrypoint: "calrissian-runner" # required
+  extra_volumes:
+    eoap_cwlwrap_config_volume_name: eoap-cwl-wrap-config-vol
+    enrich_config_volume_name: enrich-config-vol
+    functions_volume_name: "cwl-runner-functions"
+  pod_env_vars:
+    FAKE: fake

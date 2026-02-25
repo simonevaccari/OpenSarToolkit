@@ -1,0 +1,7 @@
+name: standard
+send_message_template: "send-message-coplac"
+target_topic_success: "getit.fall3d.success"
+target_topic_failure: "getit.fall3d.failure"
+message_source: "cwl2argo"
+message_type: "notification"
+on_exit: "exit-handler"
