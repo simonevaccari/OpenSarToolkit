@@ -3,7 +3,7 @@ ard-type: 'OST_GTC'
 with-speckle-filter: "NO-FILTER"
 resampling-method: 'BILINEAR_INTERPOLATION' # 'BICUBIC_INTERPOLATION'
 
-datetime:
+target_datetime:
   value: "2024-11-12T00:00:00Z"
 
 bbox:

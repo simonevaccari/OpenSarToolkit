@@ -21,8 +21,6 @@ $graph:
         types:
           - $import: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml
           - $import: https://raw.githubusercontent.com/eoap/schemas/main/geojson.yaml
-          - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/api-endpoint.yaml
-          - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml
     inputs:
       resolution:
         type: int
@@ -54,7 +52,7 @@ $graph:
           - BILINEAR_INTERPOLATION
           - BICUBIC_INTERPOLATION
           type: enum
-      datetime:
+      target_datetime:
         label: Target datetime
         doc: Target datetime in ISO 8601 format
         type: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml#DateTime
@@ -74,7 +72,7 @@ $graph:
         run: "#build_search_request"
         label: Build search_request and add datetime-interval
         in:
-          datetime: datetime
+          target_datetime: target_datetime
           bbox: bbox
         out: [search_request_norm]
       discovery:
@@ -99,7 +97,7 @@ $graph:
         doc: Convert Search results to get the item self hrefs  
         in:
           search_results: discovery/search_output
-          search_request: build_search_request/search_request_norm
+          target_datetime: target_datetime
         out: [items]
       s1_subworkflow:
         run: "#s1_subworkflow"
@@ -126,8 +124,16 @@ $graph:
         networkAccess: true
       InlineJavascriptRequirement: {}
       StepInputExpressionRequirement: {}
+      SchemaDefRequirement:
+        types:
+          - $import: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml
+          - $import: https://raw.githubusercontent.com/eoap/schemas/main/geojson.yaml
+          - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml
+          - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/api-endpoint.yaml
     inputs:
-      datetime:
+      target_datetime:
+        label: Target datetime
+        doc: Target datetime in ISO 8601 format
         type: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml#DateTime
       bbox:
         label: Area of interest
@@ -138,8 +144,8 @@ $graph:
         type: https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml#STACSearchSettings
     expression: |
       ${
-        const dt = inputs.datetime?.value;
-        if (!dt) throw new Error("datetime.value is required");
+        const dt = inputs.target_datetime?.value;
+        if (!dt) throw new Error("target_datetime.value is required");
 
         const poly = inputs.bbox;
         const bb = poly?.bbox;
@@ -151,7 +157,6 @@ $graph:
         const sr = {
           collections: ["SENTINEL-1"],
           bbox: bb,
-          datetime: { value: dt },
           "filter-lang": "cql2-json",
           filter: {
             op: "and",
@@ -196,10 +201,10 @@ $graph:
     arguments: 
       - valueFrom: $(inputs.search_results.path)      
     inputs:
-      search_request:
-        label: Search Request
-        doc: Search request from the discovery step
-        type: https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml#STACSearchSettings
+      target_datetime:
+        label: Target datetime
+        doc: Target datetime in ISO 8601 format
+        type: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml#DateTime
       search_results:
         label: Search Results
         doc: Search results from the discovery step
@@ -224,12 +229,9 @@ $graph:
       SchemaDefRequirement:
         types:
           - $import: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml
-          - $import: https://raw.githubusercontent.com/eoap/schemas/main/geojson.yaml
-          - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/api-endpoint.yaml
-          - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml
       EnvVarRequirement:
         envDef:
-          SEARCH_REQUEST: $(JSON.stringify(inputs.search_request))
+          TARGET_DATETIME: $(inputs.target_datetime.value)
       InitialWorkDirRequirement:
         listing:
         - entryname: run.sh
@@ -241,8 +243,7 @@ $graph:
             # ==============================================================
             # Select only the best candidate, ie S1 scene closest to target_date
             search_results="$1"
-
-            target_day="\$(echo "$SEARCH_REQUEST" | yq -r ".datetime.value" | cut -c1-10 | tr -d "-")"
+            target_day="\$(echo "$TARGET_DATETIME" | cut -c1-10 | tr -d "-")"
             echo "Target datetime: $target_day"
 
             # Extract product IDs (one per line)
@@ -289,12 +290,6 @@ $graph:
         networkAccess: true
       InlineJavascriptRequirement: {}
       StepInputExpressionRequirement: {}
-      SchemaDefRequirement:
-        types:
-          - $import: https://raw.githubusercontent.com/eoap/schemas/main/string_format.yaml
-          - $import: https://raw.githubusercontent.com/eoap/schemas/main/geojson.yaml
-          - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/api-endpoint.yaml
-          - $import: https://raw.githubusercontent.com/eoap/schemas/main/experimental/discovery.yaml
     inputs:
       reference_ID:
         label: Product reference ID
@@ -385,7 +380,6 @@ $graph:
         type: Directory
         outputBinding:
           glob: $(inputs.reference_ID)
-          # glob: $(inputs.reference.split("/").pop().replace(".SAFE","").replace("\"",""))
     requirements:
       NetworkAccess:
         networkAccess: true
