@@ -1,0 +1,13 @@
+resolution: 100
+ard-type: 'OST_GTC'
+with-speckle-filter: "NO-FILTER"
+resampling-method: 'BILINEAR_INTERPOLATION' # 'BICUBIC_INTERPOLATION'
+
+datetime:
+  value: "2024-11-12T00:00:00Z"
+
+bbox:
+  class: https://raw.githubusercontent.com/eoap/schemas/main/geojson.yaml#Polygon
+  type: Polygon
+  bbox: [12.144804, 41.996186, 12.457839, 42.175561]
+  coordinates: [[[12.144804, 41.996186],[12.457839, 41.996186],[12.457839, 42.175561],[12.144804, 42.175561],[12.144804, 41.996186]]]
