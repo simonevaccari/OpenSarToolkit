@@ -3,9 +3,19 @@ ard-type: 'OST_GTC'
 with-speckle-filter: "NO-FILTER"
 resampling-method: 'BILINEAR_INTERPOLATION' # 'BICUBIC_INTERPOLATION'
 
-# Test Case 1
+# # Test Case 1
+# target_datetime:
+#   value: "2024-11-13T00:00:00Z"
+
+# bbox:
+#   class: https://raw.githubusercontent.com/eoap/schemas/main/geojson.yaml#Polygon
+#   type: Polygon
+#   bbox: [12.146, 41.701, 12.629, 41.967]
+#   coordinates: [[[12.146, 41.701],[12.629, 41.701],[12.629, 41.967],[12.146, 41.967],[12.146, 41.701]]]
+
+# Test Case 2
 target_datetime:
-  value: "2024-11-13T00:00:00Z"
+  value: "2024-11-14T00:00:00Z"
 
 bbox:
   class: https://raw.githubusercontent.com/eoap/schemas/main/geojson.yaml#Polygon

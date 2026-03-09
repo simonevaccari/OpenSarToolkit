@@ -1,7 +1,7 @@
 cwlVersion: v1.2
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 2.1.7
+s:softwareVersion: 2.1.8
 schemas:
 - http://schema.org/version/9.0/schemaorg-current-http.rdf
 
@@ -101,6 +101,7 @@ $graph:
         in:
           search_results: discovery/search_output
           target_datetime: target_datetime
+          bbox: bbox
         out: [items]
       s1_subworkflow:
         run: "#s1_subworkflow"
@@ -183,7 +184,7 @@ $graph:
         const iso = (ms) => new Date(ms).toISOString().replace(/\.\d+Z$/, "Z");
         const interval = {
           start: { value: iso(t - 6 * 864e5) },
-          end:   { value: iso(t + 6 * 864e5) }
+          end:   { value: iso(t + 7 * 864e5) }
         };
 
         sr["datetime-interval"] = interval;
@@ -213,6 +214,10 @@ $graph:
         label: Search Results
         doc: Search results from the discovery step
         type: File
+      bbox:
+        label: Area of interest
+        doc: AOI polygon (bbox field will be used for STAC bbox)
+        type: https://raw.githubusercontent.com/eoap/schemas/main/geojson.yaml#Polygon
     outputs:
       items:
         type:
@@ -240,6 +245,7 @@ $graph:
       EnvVarRequirement:
         envDef:
           TARGET_DATETIME: $(inputs.target_datetime.value)
+          INPUT_BBOX: $(inputs.bbox.bbox.join(","))
       InitialWorkDirRequirement:
         listing:
         - entryname: run.sh
@@ -249,10 +255,24 @@ $graph:
             set -euo pipefail
 
             # ==============================================================
-            # Select only the best candidate, ie S1 scene closest to target_date
+            # Select only the best candidate, ie S1 with maximum overlap with bbox, and closest to target_date
             search_results="$1"
+            input_bbox="\${2:-\${INPUT_BBOX:-}}"
+
+            if [ -z "$input_bbox" ]; then
+              echo "ERROR: input bbox not provided" >&2
+              exit 1
+            fi
+
             target_day="\$(echo "$TARGET_DATETIME" | cut -c1-10 | tr -d "-")"
             echo "Target datetime: $target_day"
+            echo "Input bbox: $input_bbox"
+
+            echo "NOW NEEDS TO BE UPDATED HERE"
+
+
+
+
 
             # Extract product IDs (one per line)
             yq -r "
