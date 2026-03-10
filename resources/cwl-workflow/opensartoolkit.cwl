@@ -1,9 +1,116 @@
 cwlVersion: v1.2
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 2.1.8
+
 schemas:
 - http://schema.org/version/9.0/schemaorg-current-http.rdf
+
+# Software 
+s:name: OpenSarToolkit 
+s:description: Preprocessing an S1 image with OpenSarToolkit OST.
+s:dateCreated: '2026-03-10'
+s:license:
+  '@type': s:CreativeWork
+  s:identifier: CC-BY-4.0
+
+# Discoverability and citation
+s:keywords:
+- CWL
+- CWL Workflow
+- Workflow
+- Earth Observation
+- Earth Observation application package
+- '@type': s:DefinedTerm
+  s:description: delineation
+  s:name: application-type
+- '@type': s:DefinedTerm
+  s:description: terrain
+  s:name: domain
+- '@type': s:DefinedTerm
+  s:inDefinedTermSet: https://gcmd.earthdata.nasa.gov/kms/concepts/concept_scheme/sciencekeywords
+  s:termCode: 959f1861-a776-41b1-ba6b-d23c71d4d1eb
+
+# Run-time environment
+s:operatingSystem:
+- Linux
+- MacOS X
+s:softwareRequirements:
+- https://cwltool.readthedocs.io/en/latest/
+- https://www.python.org/
+
+# Current version of the software
+s:softwareVersion: 2.1.8
+s:softwareHelp:
+  '@type': s:CreativeWork
+  s:name: User Manual
+  s:url: https://eoap.github.io/ost_v2/
+
+# Publisher
+s:publisher:
+  '@type': s:Organization
+  s:email: info@terradue.com
+  s:identifier: https://ror.org/0069cx113
+  s:name: Terradue Srl
+
+# Authors & Contributors
+s:author:
+- '@type': s:Role
+  s:roleName: Project Manager
+  s:additionalType: http://purl.org/spar/datacite/ProjectManager
+  s:author:
+    '@type': s:Person
+    s:affiliation:
+      '@type': s:Organization
+      s:identifier: https://ror.org/0069cx113
+      s:name: Terradue
+    s:email: fabrice.brito@terradue.com
+    s:familyName: Brito
+    s:givenName: Fabrice
+    s:identifier: https://orcid.org/0009-0000-1342-9736
+
+# - '@type': s:Role
+#   s:roleName: Project Leader
+#   s:additionalType: http://purl.org/spar/datacite/ProjectLeader
+#   s:author:
+#     '@type': s:Person
+#     s:affiliation:
+#       '@type': s:Organization
+#       s:identifier: 
+#       s:name: Brockmann
+#     s:email: 
+#     s:familyName: 
+#     s:givenName: 
+#     s:identifier: 
+# - '@type': s:Role
+#   s:roleName: Project Leader
+#   s:additionalType: http://purl.org/spar/datacite/ProjectLeader
+#   s:author:
+#     '@type': s:Person
+#     s:affiliation:
+#       '@type': s:Organization
+#       s:identifier: 
+#       s:name: 
+#     s:email: 
+#     s:familyName: 
+#     s:givenName: 
+#     s:identifier: 
+
+s:contributor:
+- '@type': s:Role
+  s:roleName: Researcher
+  s:additionalType: http://purl.org/spar/datacite/Researcher
+  s:contributor:
+    '@type': s:Person
+    s:affiliation:
+      '@type': s:Organization
+      s:identifier: https://ror.org/0069cx113
+      s:name: Terradue
+    s:email: simone.vaccari@terradue.com
+    s:familyName: Vaccari
+    s:givenName: Simone
+    s:identifier: https://orcid.org/0000-0002-2757-4165
+
+# CWL Workflow 
 
 $graph:
   - label: OpenSarToolkit
