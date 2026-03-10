@@ -234,7 +234,8 @@ $graph:
       InlineJavascriptRequirement: {}
       StepInputExpressionRequirement: {}
       DockerRequirement:
-        dockerPull: ghcr.io/eoap/zarr-cloud-native-format/yq@sha256:401655f3f4041bf3d03b05f3b24ad4b9d18cfcf908c3b44f5901383621d0688a
+        # dockerPull: ghcr.io/eoap/zarr-cloud-native-format/yq@sha256:401655f3f4041bf3d03b05f3b24ad4b9d18cfcf908c3b44f5901383621d0688a
+        dockerPull: python:3.11-slim
       SchemaDefRequirement:
         types:
           - $import: https://raw.githubusercontent.com/eoap/schemas/main/ogc.yaml
@@ -265,46 +266,105 @@ $graph:
             fi
 
             target_day="\$(echo "$TARGET_DATETIME" | cut -c1-10 | tr -d "-")"
+            echo "Search_results: $search_results"
             echo "Target datetime: $target_day"
             echo "Input bbox: $input_bbox"
+            
+            # Check which python
+            echo '[]' > items.json
 
-            echo "NOW NEEDS TO BE UPDATED HERE"
-
-
-
-
-
-            # Extract product IDs (one per line)
-            yq -r "
-              .features[].links[]
-              | select(.rel==\"derived_from\")
-              | .href
-              | capture(\"Name%20eq%20%27(?<name>[^%]+)\\.SAFE%27\").name
-            " "$search_results" > candidates.txt
-
-            echo "Candidates:"
-            cat candidates.txt
-
-            # Choose same-day if exists; else first
-            # Build awk program in a temp file, without shell expanding $0 etc.
-            cat > /tmp/select_best.awk <<\AWK
-            $0 ~ "_" td "T" { print; exit }
-            NR==1 { first=$0 }
-            END { if (first) print first }
-            AWK
-
-            best="\$(awk -v td="$target_day" -f /tmp/select_best.awk candidates.txt | head -n 1)"
-
-            # Write JSON array (what your outputEval expects)
-            if [ -z "$best" ]; then
-              echo "[]" > items.json
+            if command -v python3 >/dev/null 2>&1; then
+              PYTHON_BIN=python3
+            elif command -v python >/dev/null 2>&1; then
+              PYTHON_BIN=python
             else
-              printf "[\"%s\"]\n" "$best" > items.json
+              echo "ERROR: neither python3 nor python found in container" >&2
+              exit 1
             fi
+
+            # install pystac and shapely
+            pip install --user pystac shapely
+
+            # Switch to python to calculate percentage of S1 products footprints over BBOX
+            "$PYTHON_BIN" - "$search_results" "$TARGET_DATETIME" "$input_bbox" > items.json <<'PY'
+            import json
+            import re
+            import sys
+            from datetime import datetime, timezone
+
+            import pystac
+            from shapely.geometry import shape, box
+
+            search_results_path = sys.argv[1]
+            target_dt_str = sys.argv[2]          # e.g. 20241114T00:00:00Z
+            input_bbox_str = sys.argv[3]         # e.g. 12.146,41.701,12.629,41.967
+
+            # Parse target datetime
+            target_dt = datetime.fromisoformat(target_dt_str.replace("Z", "+00:00"))
+
+            # Build user bbox polygon
+            minx, miny, maxx, maxy = map(float, input_bbox_str.split(","))
+            user_geom = box(minx, miny, maxx, maxy)
+            user_area = user_geom.area
+            if user_area <= 0:
+                raise ValueError("Input bbox has zero area")
+
+            # Load STAC FeatureCollection
+            with open(search_results_path, "r", encoding="utf-8") as f:
+                fc = json.load(f)
+
+            items = pystac.ItemCollection.from_dict(fc)
+
+            def extract_product_name(item):
+                for link in item.links:
+                    if link.rel == "derived_from":
+                        href = link.target if isinstance(link.target, str) else str(link.target)
+                        m = re.search(r"Name%20eq%20%27([^%]+)\.SAFE%27", href)
+                        if m:
+                            return m.group(1)
+                return item.id
+
+            best_name = None
+            best_key = None
+            debug_rows = []
+
+            for item in items.items:
+                if item.geometry is None:
+                    continue
+
+                scene_geom = shape(item.geometry)
+                overlap_area = scene_geom.intersection(user_geom).area
+                overlap_pct = 100.0 * overlap_area / user_area
+
+                proc_dt_str = item.properties.get("processing:datetime")
+                if not proc_dt_str:
+                    continue
+                proc_dt = datetime.fromisoformat(proc_dt_str.replace("Z", "+00:00"))
+
+                delta_sec = abs((proc_dt - target_dt).total_seconds())
+
+                name = extract_product_name(item)
+
+                # highest overlap first, then closest datetime
+                key = (-overlap_pct, delta_sec, proc_dt.isoformat(), name)
+
+                debug_rows.append({
+                    "name": name,
+                    "overlap_pct": round(overlap_pct, 6),
+                    "processing_datetime": proc_dt.isoformat(),
+                    "delta_sec": delta_sec,
+                })
+
+                if best_key is None or key < best_key:
+                    best_key = key
+                    best_name = name
+
+            print(json.dumps([best_name] if best_name else []))
+            print(json.dumps(debug_rows, indent=2), file=sys.stderr)
+            PY
 
             echo "Selected item(s):"
             cat items.json
-
 
 # =====================================
 
